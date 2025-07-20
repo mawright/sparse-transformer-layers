@@ -7,7 +7,7 @@ from torch import Tensor
 
 from pytorch_sparse_utils.indexing.utils import gather_mask_and_fill
 from pytorch_sparse_utils.misc import sparse_tensor_to_dense_with_mask
-from sparse_transformer_layers.subset_attn.autograd_helpers import (
+from sparse_transformer_layers.layers.subset_attn.autograd_helpers import (
     project_kv,
 )
 from nd_rotary_encodings.forward_backward_fns import (

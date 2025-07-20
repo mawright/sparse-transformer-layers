@@ -6,7 +6,7 @@ from torch import Tensor
 from hypothesis import given, settings
 from hypothesis import strategies as st
 
-from sparse_transformer_layers.subset_attn import (
+from sparse_transformer_layers.layers.subset_attn import (
     batch_sparse_index_subset_attn,
     BatchSparseIndexSubsetAttention,
 )

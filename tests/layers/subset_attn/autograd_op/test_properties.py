@@ -5,7 +5,7 @@ import torch
 from torch import Tensor
 from hypothesis import given, settings
 
-from sparse_transformer_layers.subset_attn.autograd import (
+from sparse_transformer_layers.layers.subset_attn.autograd import (
     GatherAndSubsetAttentionFunction,
 )
 

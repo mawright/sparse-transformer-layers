@@ -6,7 +6,7 @@ from hypothesis import given, settings, assume
 from hypothesis import strategies as st
 from torch import Tensor
 
-from sparse_transformer_layers.subset_attn.autograd import (
+from sparse_transformer_layers.layers.subset_attn.autograd import (
     GatherAndSubsetAttentionFunction,
 )
 

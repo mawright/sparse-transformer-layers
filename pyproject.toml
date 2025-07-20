@@ -33,3 +33,8 @@ markers = [
     "cuda_if_available: mark test to run on CUDA when available, otherwise fall back to CPU",
     "cpu_and_cuda: mark test to run on both cpu as well as CUDA if available"
 ]
+filterwarnings = [
+    "ignore:.*custom_[fb]wd.*:FutureWarning:spconv.pytorch.functional",  # spconv import
+    "ignore:.*Importing from timm\\.models\\.layers.*:FutureWarning:timm.models.layers", 
+    "ignore:.*locale.getdefaultlocale.*:DeprecationWarning",
+]

@@ -1,9 +1,10 @@
 import pytest
 import torch
 
-from sparse_transformer_layers.sparse_linear import batch_sparse_index_linear
+from sparse_transformer_layers.layers.sparse_linear import batch_sparse_index_linear
 
 from ..constants import EMBED_DIM
+
 
 @pytest.mark.cuda_if_available
 @pytest.mark.parametrize(

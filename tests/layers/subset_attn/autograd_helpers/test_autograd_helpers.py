@@ -3,7 +3,7 @@ import torch
 import pytest
 from hypothesis import given, strategies as st
 
-from sparse_transformer_layers.subset_attn.autograd_helpers import split_heads
+from sparse_transformer_layers.layers.subset_attn.autograd_helpers import split_heads
 
 
 class TestSplitHeads:

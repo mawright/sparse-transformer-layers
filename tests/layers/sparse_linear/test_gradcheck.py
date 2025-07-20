@@ -5,7 +5,7 @@ from torch.autograd import gradcheck
 from pytorch_sparse_utils.indexing.utils import get_sparse_index_mapping
 
 # Import module functions
-from sparse_transformer_layers.sparse_linear.autograd import (
+from sparse_transformer_layers.layers.sparse_linear.autograd import (
     GatherAndLinearFunction,
 )
 

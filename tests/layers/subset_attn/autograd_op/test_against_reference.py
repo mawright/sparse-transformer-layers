@@ -6,7 +6,7 @@ from hypothesis import given, settings, assume
 from torch import Tensor
 
 from pytorch_sparse_utils.batching import padded_to_concatenated
-from sparse_transformer_layers.subset_attn.autograd import (
+from sparse_transformer_layers.layers.subset_attn.autograd import (
     GatherAndSubsetAttentionFunction,
 )
 

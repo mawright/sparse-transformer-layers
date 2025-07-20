@@ -1,7 +1,7 @@
 import pytest
 import torch
 
-from sparse_transformer_layers.subset_attn.autograd_helpers import linear_grads
+from sparse_transformer_layers.layers.subset_attn.autograd_helpers import linear_grads
 
 
 @pytest.fixture
