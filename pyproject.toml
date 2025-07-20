@@ -1,0 +1,35 @@
+[project]
+name = "sparse-transformer-layers"
+description = "Transformer layers for PyTorch sparse tensors"
+authors = [
+    {name = "Matthew A. Wright", email = "mawright@lbl.gov"}
+]
+readme = "README.md"
+dynamic = ["version"]
+requires-python = ">= 3.9"
+dependencies = [
+    "numpy",
+    "torch",
+    "pytorch_sparse_utils @ git+https://github.com/mawright/pytorch-sparse-utils.git",
+    "nd_rotary_encodings @ git+https://github.com/mawright/nd-rotary-encodings.git",
+]
+
+[tool.setuptools]
+packages = ["sparse_transformer_layers"]
+
+[project.optional-dependencies]
+tests = [
+    "pytest",
+    "pytest-env",
+    "hypothesis",
+]
+docs = ["mkdocs", "mkdocstrings", "mkdocstrings-python"]
+
+[tool.pytest.ini_options]
+env = [
+    "CUDA_LAUNCH_BLOCKING=1",  # Makes debugging easier
+]
+markers = [
+    "cuda_if_available: mark test to run on CUDA when available, otherwise fall back to CPU",
+    "cpu_and_cuda: mark test to run on both cpu as well as CUDA if available"
+]
