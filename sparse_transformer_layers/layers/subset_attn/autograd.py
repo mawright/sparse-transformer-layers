@@ -2,7 +2,7 @@
 from typing import Optional, Union
 
 import torch
-from nd_rotary_encodings.forward_backward_fns import (
+from nd_rotary_encodings.functional import (
     calculate_rope,
     calculate_rope_backward,
     rotate_embeddings,

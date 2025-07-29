@@ -10,7 +10,7 @@ from pytorch_sparse_utils.misc import sparse_tensor_to_dense_with_mask
 from sparse_transformer_layers.layers.subset_attn.autograd_helpers import (
     project_kv,
 )
-from nd_rotary_encodings.forward_backward_fns import (
+from nd_rotary_encodings.functional import (
     calculate_rope,
     rotate_embeddings,
 )
