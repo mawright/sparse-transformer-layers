@@ -674,6 +674,7 @@ class TestForward:
         for name, param in module_instance.named_parameters():
             assert param.grad is not None, f"Parameter {name} has no gradient"
 
+    @pytest.mark.filterwarnings("ignore:^Expected un-normalized:UserWarning")
     @settings(deadline=None)
     @given(inputs=input_data_strategy())
     def test_forward_hypothesis(self, inputs, device: str):

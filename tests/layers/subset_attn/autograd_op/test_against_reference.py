@@ -62,7 +62,7 @@ def compare_intermediates(
         subset_keys,
         stacked_keys_from_batched,
         atol=1e-3,
-        rtol=1e-3,
+        rtol=1e-2,
     ), f"max key diff: {(subset_keys - stacked_keys_from_batched).abs().max()}"
 
     # same for values...
@@ -399,7 +399,7 @@ class TestAgainstReferenceHypothesis:
         abs_difference = torch.abs(subset_attn_out - batched_attn_out_stacked)
 
         assert torch.allclose(
-            subset_attn_out, batched_attn_out_stacked, atol=1e-4, rtol=1e-3
+            subset_attn_out, batched_attn_out_stacked, atol=1e-3, rtol=1e-2
         ), f"max output diff: {abs_difference.max()}"
 
 

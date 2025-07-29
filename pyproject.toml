@@ -27,6 +27,7 @@ docs = ["mkdocs", "mkdocstrings", "mkdocstrings-python"]
 
 [tool.pytest.ini_options]
 env = [
+    "OMP_NUM_THREADS=16",  # MinkowskiEngine issues a warning on import if this is unset
     "CUDA_LAUNCH_BLOCKING=1",  # Makes debugging easier
 ]
 markers = [
