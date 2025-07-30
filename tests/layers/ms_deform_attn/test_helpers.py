@@ -236,7 +236,7 @@ def make_random_sampling_points(
 
 @pytest.mark.cpu_and_cuda
 class TestMultilevelSparseBilinearGridSample:
-    @given(inputs=grid_sample_strategy())
+    @given(inputs=grid_sample_strategy(require_grads=True))
     @settings(suppress_health_check=[HealthCheck.differing_executors], deadline=None)
     def test_basics(self, inputs, device: Union[str, torch.device]):
         data = grid_sample_tensors(**inputs, device=device)
@@ -455,6 +455,131 @@ class TestMultilevelSparseBilinearGridSample:
         out_dense = out_dense.permute(0, 2, 1).reshape(-1, head_dim)
 
         assert torch.allclose(out_sparse, out_dense, atol=1e-5, rtol=1e-4)
+
+    def test_errors(self, device: Union[str, torch.device]):
+        inputs = {
+            "n_heads": 2,
+            "head_dim": 4,
+            "embed_dim": 8,
+            "position_dim": 2,
+            "n_levels": 2,
+            "extra_batch_dims": [],
+            "seq_lengths": [3, 4],
+            "level_spatial_shapes": [[4, 4], [8, 8]],
+            "sparsity": 0.1,
+            "require_grads": False,
+            "make_head_indices": True,
+            "make_level_indices": True,
+            "make_background_embedding": False,
+            "seed": 0,
+        }
+        tensors = grid_sample_tensors(**inputs, device=device)
+
+        ### Non-6D sparse tensor
+        bad_sparse = torch.sparse_coo_tensor(
+            torch.randint(0, 10, (7, 6), device=device),
+            torch.randn(6, 2, device=device),
+        )
+        with pytest.raises(
+            (torch.jit.Error, ValueError),  # pyright: ignore[reportArgumentType]
+            match="Expected 6D sparse tensor",
+        ):
+            multilevel_sparse_bilinear_grid_sample(
+                bad_sparse,
+                tensors["spatial_positions"],
+                tensors["batch_indices"],
+                tensors["level_spatial_shapes"],
+            )
+
+        ### Tensor without 5 sparse dims
+        bad_sparse = torch.sparse_coo_tensor(
+            torch.randint(0, 10, (6, 5), device=device),
+            torch.randn(5, device=device),
+        )
+        with pytest.raises(
+            (torch.jit.Error, ValueError),  # pyright: ignore[reportArgumentType]
+            match="Expected sparse tensor to have 5 sparse dims",
+        ):
+            multilevel_sparse_bilinear_grid_sample(
+                bad_sparse,
+                tensors["spatial_positions"],
+                tensors["batch_indices"],
+                tensors["level_spatial_shapes"],
+            )
+
+        ### Shape mismatch for spatial positions and batch indices
+        with pytest.raises(
+            (torch.jit.Error, ValueError),  # pyright: ignore[reportArgumentType]
+            match="Shape mismatch for spatial_positions and batch_indices",
+        ):
+            multilevel_sparse_bilinear_grid_sample(
+                tensors["sparse_tensor"],
+                tensors["spatial_positions"],
+                tensors["batch_indices"][:-1],  # type: ignore
+                tensors["level_spatial_shapes"],
+            )
+
+        ### Shape mismatch for spatial positions and level indices
+        with pytest.raises(
+            (torch.jit.Error, ValueError),  # pyright: ignore[reportArgumentType]
+            match="Shape mismatch for spatial_positions and level_indices",
+        ):
+            multilevel_sparse_bilinear_grid_sample(
+                tensors["sparse_tensor"],
+                tensors["spatial_positions"],
+                tensors["batch_indices"],
+                tensors["level_spatial_shapes"],
+                level_indices=tensors["level_indices"][:-1],  # type: ignore
+            )
+
+        ### Shape mismatch for spatial positions and head indices
+        with pytest.raises(
+            (torch.jit.Error, ValueError),  # pyright: ignore[reportArgumentType]
+            match="Shape mismatch for spatial_positions and head_indices",
+        ):
+            multilevel_sparse_bilinear_grid_sample(
+                tensors["sparse_tensor"],
+                tensors["spatial_positions"],
+                tensors["batch_indices"],
+                tensors["level_spatial_shapes"],
+                head_indices=tensors["head_indices"][:-1],  # type: ignore
+            )
+
+        ### Wrong number of feature levels in level_spatial_shapes
+        with pytest.raises(
+            (torch.jit.Error, ValueError),  # pyright: ignore[reportArgumentType]
+            match="Number of feature levels in level_spatial_shapes does not",
+        ):
+            multilevel_sparse_bilinear_grid_sample(
+                tensors["sparse_tensor"],
+                tensors["spatial_positions"],
+                tensors["batch_indices"],
+                tensors["level_spatial_shapes"][:-1],  # type: ignore
+            )
+
+        ### Spatial positions wrong level dim
+        with pytest.raises(
+            (torch.jit.Error, RuntimeError),  # pyright: ignore[reportArgumentType]
+            match="Default level_indices mode assumes",
+        ):
+            multilevel_sparse_bilinear_grid_sample(
+                tensors["sparse_tensor"],
+                tensors["spatial_positions"][..., :-1, :, :],  # type: ignore
+                tensors["batch_indices"],
+                tensors["level_spatial_shapes"],
+            )
+
+        ### Spatial positions wrong head dim dim
+        with pytest.raises(
+            (torch.jit.Error, RuntimeError),  # pyright: ignore[reportArgumentType]
+            match="Default head_indices mode assumes",
+        ):
+            multilevel_sparse_bilinear_grid_sample(
+                tensors["sparse_tensor"],
+                tensors["spatial_positions"][..., :-1, :],  # type: ignore
+                tensors["batch_indices"],
+                tensors["level_spatial_shapes"],
+            )
 
 
 @pytest.mark.cpu_and_cuda

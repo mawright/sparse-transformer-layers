@@ -286,7 +286,7 @@ class MultilevelSelfAttentionBlockWithRoPE(nn.Module):
         return x
 
     # not used, for reference
-    def _scaled_dot_product_attention(
+    def _scaled_dot_product_attention(  # pragma: no cover
         self,
         query,
         key,

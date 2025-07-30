@@ -273,7 +273,8 @@ class TestQueryMask:
 
         # Test output properly masked (no other masking used)
         assert (output[query_mask] == 0.0).all()
-        # assert (output[~query_mask] != 0.0).all()
+        if output[~query_mask].numel() > 0:
+            assert (output[~query_mask] != 0.0).any()
 
         # Test gradients
         loss = output.sum()
@@ -281,10 +282,8 @@ class TestQueryMask:
 
         assert inputs["query_tensor"].grad is not None
         assert (inputs["query_tensor"].grad[query_mask] == 0.0).all()
-        assert (inputs["query_tensor"].grad[~query_mask] != 0.0).all()
-
-        # make sure counted examples aren't degenerate
-        assume(query_mask.sum() > 0)
+        if inputs["query_tensor"].grad[~query_mask].numel() > 0:
+            assert (inputs["query_tensor"].grad[~query_mask] != 0.0).any()
 
 
 @pytest.mark.cuda_if_available

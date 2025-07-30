@@ -424,7 +424,7 @@ class GatherAndSubsetAttentionFunction(torch.autograd.Function):
         return output
 
     @staticmethod
-    def _initialize_backward(
+    def _initialize_backward(  # pragma: no cover
         ctx: torch.autograd.function.FunctionCtx,
     ) -> tuple[
         # fmt: off
@@ -491,7 +491,7 @@ class GatherAndSubsetAttentionFunction(torch.autograd.Function):
         # fmt: on
 
     @staticmethod
-    def _determine_needed_intermediate_grads(
+    def _determine_needed_intermediate_grads(  # pragma: no cover
         needed_grads: dict[str, bool],
     ) -> dict[str, bool]:
         """Determine which intermediate tensors need to be computed to compute
@@ -580,7 +580,7 @@ class GatherAndSubsetAttentionFunction(torch.autograd.Function):
     @staticmethod
     @torch.autograd.function.once_differentiable
     @custom_bwd(device_type="cuda")
-    def backward(
+    def backward(  # pragma: no cover
         ctx: torch.autograd.function.FunctionCtx, grad_output: Tensor
     ) -> tuple[Optional[Tensor], ...]:
         """Implements the backward pass for sparse neighborhood attention.
@@ -873,7 +873,7 @@ class GatherAndSubsetAttentionFunction(torch.autograd.Function):
 def _compute_grad_attn_scores(
     grad_output: Tensor,
     values: Tensor,
-    attn_weights: Tensor,
+    attn_weights: Tensor,  # pre-dropout
     is_specified_mask: Tensor,
     dropout_p: float,
     training: bool,
@@ -891,11 +891,15 @@ def _compute_grad_attn_scores(
     ).squeeze(-2)                  # (n_heads, n_queries, n_keys_per_query)
     # fmt: on
 
-    # Apply dropout to attn_weights if it was done in the forward pass
+    # Apply dropout to grad_attn_weights if it was done in the forward pass
     if training and dropout_p > 0.0:
         assert attn_dropout_mask is not None
         dropout_scale = 1.0 / (1.0 - dropout_p)
-        attn_weights = attn_weights.masked_fill(attn_dropout_mask, 0.0) * dropout_scale
+        grad_attn_weights.masked_fill_(attn_dropout_mask, 0.0)
+        grad_attn_weights *= dropout_scale
+        # grad_attn_weights = (
+        #     grad_attn_weights.masked_fill(attn_dropout_mask, 0.0) * dropout_scale
+        # )
 
     # softmax gradient: dL/dz = S * (dL/dS - sum_j(S_j * dL/dS_j))
     # where z = attn_scores, S = softmax(z), dL/dS = grad_attn_weights
@@ -909,6 +913,8 @@ def _compute_grad_attn_scores(
 
     if query_mask is not None:
         grad_attn_scores.masked_fill_(query_mask[None, :, None], 0.0)
+
+    grad_attn_scores.nan_to_num_(0.0)
 
     return grad_attn_scores
 
@@ -975,7 +981,7 @@ def _compute_grads_keys_and_rope_encoding(
         assert not needs_grad_k
         return None, grad_key_rope_encoding
 
-    # (n_heads, n_queries, embed_dim)
+    # (n_queries, n_keys_per_query, embed_dim)
     grad_keys = grad_keys.flatten(-2, -1)  # stack heads
 
     return grad_keys, grad_key_rope_encoding

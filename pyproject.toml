@@ -21,6 +21,7 @@ packages = ["sparse_transformer_layers"]
 tests = [
     "pytest",
     "pytest-env",
+    "pytest-xdist",
     "hypothesis",
 ]
 docs = ["mkdocs", "mkdocstrings", "mkdocstrings-python"]

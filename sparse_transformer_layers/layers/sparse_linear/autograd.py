@@ -40,7 +40,7 @@ class GatherAndLinearFunction(torch.autograd.Function):
 
     @staticmethod
     @torch.autograd.function.once_differentiable
-    def backward(
+    def backward(  # pragma: no cover
         ctx: torch.autograd.function.FunctionCtx, grad_output: Tensor
     ) -> tuple[Optional[Tensor], ...]:
         sparse_tensor_values, weight, bias = (
