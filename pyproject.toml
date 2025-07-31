@@ -22,6 +22,7 @@ tests = [
     "pytest",
     "pytest-env",
     "pytest-xdist",
+    "pytest-cov",
     "hypothesis",
 ]
 docs = ["mkdocs", "mkdocstrings", "mkdocstrings-python"]
