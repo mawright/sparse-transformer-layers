@@ -260,3 +260,22 @@ def test_bias_trick_consistency(setup_tensors):
 
     assert torch.allclose(weight_grad_combined, weight_grad_separate)
     assert torch.allclose(bias_grad_combined, bias_grad_separate)
+
+
+@pytest.mark.cuda_if_available
+def test_shape_error(setup_tensors):
+    """Test that bad grad output tensor shape raises an error"""
+    tensors = setup_tensors
+    inputs = tensors["inputs"]
+    grad_output = torch.randn(
+        10,
+        tensors["shapes"]["num_projections"],
+        tensors["shapes"]["batch_size"],
+        tensors["shapes"]["out_features"],
+    )
+
+    with pytest.raises(
+        (ValueError, torch.jit.Error),  # pyright: ignore[reportArgumentType]
+        match="Expected grad_output.ndim to be 2 or 3, got",
+    ):
+        _ = linear_grads(grad_output, inputs, True, True)

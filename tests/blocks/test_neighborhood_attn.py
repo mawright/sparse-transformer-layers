@@ -21,7 +21,10 @@ from sparse_transformer_layers.blocks.neighborhood_attn import (
 from sparse_transformer_layers.layers.subset_attn import (
     BatchSparseIndexSubsetAttention,
 )
-from ..conftest import random_multilevel_sparse_tensor_indices, simple_sparse_input_tensors
+from ..conftest import (
+    random_multilevel_sparse_tensor_indices,
+    simple_sparse_input_tensors,
+)
 from .conftest import ModuleHook
 
 
@@ -56,7 +59,7 @@ def base_module_instance(
 def neighborhood_data_strategy(
     draw,
     require_grads: bool = False,
-    standard_float_range=False,
+    standard_float_range: bool = False,
 ) -> dict[str, Any]:
     # Draw basic shape parameters
     n_heads = draw(st.integers(1, 8))
@@ -97,6 +100,9 @@ def neighborhood_data_strategy(
     seed = draw(st.integers(0, int(1e8)))
     float_dtype = draw(st.just(torch.float32))
 
+    # Decide whether to include optional background embedding
+    make_background_embedding = draw(st.booleans())
+
     if standard_float_range:
         min_float_value = -1
         max_float_value = 1
@@ -109,13 +115,18 @@ def neighborhood_data_strategy(
     position_dtype = draw(st.just(torch.float32))
 
     if require_grads:
+        potential_requiring_grads = [
+            "query",
+            "query_spatial_positions",
+            "stacked_feature_maps",
+        ]
+        if make_background_embedding:
+            potential_requiring_grads.append("background_embedding")
         tensors_requiring_grads = draw(
             st.lists(
-                st.sampled_from(
-                    ["query", "query_spatial_positions", "stacked_feature_maps"]
-                ),
+                st.sampled_from(potential_requiring_grads),
                 min_size=1,
-                max_size=3,
+                max_size=len(potential_requiring_grads),
                 unique=True,
             )
         )
@@ -166,6 +177,7 @@ def neighborhood_data_strategy(
             "query_full_neighborhood_portion": query_full_neighborhood_portion,
             "sparse_region_sparsity": sparse_region_sparsity,
             "make_level_indices": make_level_indices,
+            "make_background_embedding": make_background_embedding,
             "min_float_value": min_float_value,
             "max_float_value": max_float_value,
             "float_dtype": float_dtype,
@@ -185,6 +197,7 @@ def strategy_input_tensors(
     query_full_neighborhood_portion: float,
     sparse_region_sparsity: float,
     make_level_indices: bool,
+    make_background_embedding: bool,
     min_float_value: float,
     max_float_value: float,
     float_dtype: torch.dtype,
@@ -297,6 +310,16 @@ def strategy_input_tensors(
     if "stacked_feature_maps" in tensors_requiring_grads:
         stacked_feature_maps.requires_grad_(True)
 
+    # Make optional background embedding
+    background_embeding = None
+    if make_background_embedding:
+        background_embeding = torch.empty(
+            ((batch_size, n_levels, embed_dim)), device=device, dtype=float_dtype
+        )
+        background_embeding.uniform_(min_float_value, max_float_value)
+        if "background_embedding" in tensors_requiring_grads:
+            background_embeding.requires_grad_(True)
+
     # reset rng state
     if device.type == "cuda":
         torch.cuda.set_rng_state(rng_state, device)
@@ -309,6 +332,7 @@ def strategy_input_tensors(
         "query_batch_offsets": query_batch_offsets,
         "stacked_feature_maps": stacked_feature_maps,
         "level_spatial_shapes": level_spatial_shapes,
+        "background_embedding": background_embeding,
         "query_level_indices": query_level_indices,
     }
 
@@ -1105,8 +1129,11 @@ class TestProperties:
         for name, tensor in input_data.items():
             if (
                 not inputs["tensor_config"]["make_level_indices"]
-                and name == "query_level_indices"  # Only optional tensor
-            ):
+                and name == "query_level_indices"
+            ) or (
+                not inputs["tensor_config"]["make_background_embedding"]
+                and name == "background_embedding"
+            ):  # optional tensors
                 assert tensor is None
             else:
                 assert tensor is not None, f"{name} is None"

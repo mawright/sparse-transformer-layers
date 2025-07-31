@@ -3,7 +3,7 @@ from typing import Union, Optional
 import pytest
 import torch
 from hypothesis import strategies as st
-from hypothesis import given, settings, HealthCheck
+from hypothesis import given, settings, HealthCheck, example
 from torch import Tensor
 import torch.nn.functional as F
 
@@ -282,6 +282,38 @@ class TestComputeGradKeysAndRoPEEncoding:
         else:
             assert rope_encoding is None
 
+    def test_no_grads(self, device):
+        n_heads = 4
+        queries, keys, _, scale = random_attn_tensors(n_heads=n_heads, device=device)
+
+        queries: Tensor = split_heads(queries, n_heads)  # (q, h, d)
+        keys: Tensor = split_heads(keys, n_heads)  # (q, k, h, d)
+        keys_unpermuted = keys.detach().clone()
+
+
+        queries: Tensor = permute_for_attention(queries)  # (h, q, d)
+        keys: Tensor = permute_for_attention(keys)  # (h, q, k, d)
+
+        attn_scores = torch.matmul(
+            queries.unsqueeze(-2) * scale, keys.transpose(-1, -2)
+        ).squeeze(
+            -2
+        )  # (h, q, k)
+        grad_attn_scores = torch.randn_like(attn_scores)
+
+        grad_keys, grad_rope_encoding = _compute_grads_keys_and_rope_encoding(
+            grad_attn_scores,
+            queries,
+            keys_unpermuted,
+            scale,
+            None,
+            False,
+            False,
+        )
+
+        assert grad_keys is None
+        assert grad_rope_encoding is None
+
 
 class TestComputeGradValues:
     @settings(deadline=None, suppress_health_check=[HealthCheck.differing_executors])
@@ -348,6 +380,28 @@ class TestComputeGradValues:
 
 class TestComputeGradsKeyValueProjections:
     @settings(deadline=None, suppress_health_check=[HealthCheck.differing_executors])
+    @example(  # both weights, no biases
+        n_heads=2,
+        n_q=2,
+        n_k=2,
+        head_dim=4,
+        grad_key_weight=True,
+        grad_value_weight=True,
+        grad_key_bias=False,
+        grad_value_bias=False,
+        seed=0,
+    )
+    @example(  # both biases, no weights
+        n_heads=2,
+        n_q=2,
+        n_k=2,
+        head_dim=4,
+        grad_key_weight=False,
+        grad_value_weight=False,
+        grad_key_bias=True,
+        grad_value_bias=True,
+        seed=0,
+    )
     @given(
         n_heads=st.integers(1, 5),
         n_q=st.integers(1, 4),
@@ -411,15 +465,26 @@ class TestComputeGradsKeyValueProjections:
         if grad_key_weight:
             assert Wk.grad is not None
             assert_print_diff(grad_Wk, Wk.grad, atol=1e-6)
+        else:
+            assert grad_Wk is None
+
         if grad_value_weight:
             assert Wv.grad is not None
             assert_print_diff(grad_Wv, Wv.grad, atol=1e-6)
+        else:
+            assert grad_Wv is None
+
         if grad_key_bias:
             assert bias_k.grad is not None
             assert_print_diff(grad_bias_k, bias_k.grad, atol=1e-6)
+        else:
+            assert grad_bias_k is None
+
         if grad_value_bias:
             assert bias_v.grad is not None
             assert_print_diff(grad_bias_v, bias_v.grad, atol=1e-6)
+        else:
+            assert grad_bias_v is None
 
 
 @pytest.mark.cuda_if_available

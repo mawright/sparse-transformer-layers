@@ -1,11 +1,17 @@
-import torch
-
 import pytest
-from hypothesis import given, strategies as st
+import torch
+from hypothesis import HealthCheck, given, settings
+from hypothesis import strategies as st
+from torch import Tensor
 
-from sparse_transformer_layers.layers.subset_attn.autograd_helpers import split_heads
+from sparse_transformer_layers.layers.subset_attn.autograd_helpers import (
+    permute_for_attention,
+    permute_for_attention_backward,
+    split_heads,
+)
 
 
+@pytest.mark.cpu_and_cuda
 class TestSplitHeads:
 
     # Basic functionality tests
@@ -151,3 +157,71 @@ class TestSplitHeads:
         manual_result = tensor.reshape(n_queries, n_heads, embed_dim // n_heads)
 
         assert torch.allclose(result, manual_result)
+
+
+@pytest.mark.cpu_and_cuda
+class TestPermuteForAttention:
+    @settings(
+        max_examples=10,
+        suppress_health_check=[HealthCheck.differing_executors],
+        deadline=None,
+    )
+    @given(dims=st.lists(st.integers(0, 8), min_size=3, max_size=4))
+    def test_hypothesis(self, dims: list[int], device):
+        tensor = torch.randn(dims, device=device)
+        permuted: Tensor = permute_for_attention(tensor)
+
+        assert isinstance(permuted, Tensor)
+        assert permuted.is_contiguous()
+        if tensor.ndim == 3:
+            assert permuted.shape == (tensor.size(1), tensor.size(0), tensor.size(2))
+        else:
+            assert permuted.shape == (
+                tensor.size(2),
+                tensor.size(0),
+                tensor.size(1),
+                tensor.size(3),
+            )
+
+    @pytest.mark.parametrize("shape", [[2, 4], [2, 4, 6, 8, 10]])
+    def test_shape_error(self, shape: list[int], device):
+        tensor = torch.randn(4, 6, device=device)
+        with pytest.raises(
+            (ValueError, torch.jit.Error),  # pyright: ignore[reportArgumentType]
+            match="Expected tensor to be 3D or 4D",
+        ):
+            _ = permute_for_attention(tensor)
+
+
+@pytest.mark.cpu_and_cuda
+class TestPermuteForAttentionBackward:
+    @settings(
+        max_examples=10,
+        suppress_health_check=[HealthCheck.differing_executors],
+        deadline=None,
+    )
+    @given(dims=st.lists(st.integers(0, 8), min_size=3, max_size=4))
+    def test_hypothesis(self, dims: list[int], device):
+        tensor = torch.randn(dims, device=device)
+        permuted: Tensor = permute_for_attention_backward(tensor)
+
+        assert isinstance(permuted, Tensor)
+        assert permuted.is_contiguous()
+        if tensor.ndim == 3:
+            assert permuted.shape == (tensor.size(1), tensor.size(0), tensor.size(2))
+        else:
+            assert permuted.shape == (
+                tensor.size(1),
+                tensor.size(2),
+                tensor.size(0),
+                tensor.size(3),
+            )
+
+    @pytest.mark.parametrize("shape", [[2, 4], [2, 4, 6, 8, 10]])
+    def test_shape_error(self, shape: list[int], device):
+        tensor = torch.randn(4, 6, device=device)
+        with pytest.raises(
+            (ValueError, torch.jit.Error),  # pyright: ignore[reportArgumentType]
+            match="Expected tensor to be 3D or 4D",
+        ):
+            _ = permute_for_attention_backward(tensor)

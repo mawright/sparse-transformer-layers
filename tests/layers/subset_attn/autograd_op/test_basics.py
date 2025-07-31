@@ -471,3 +471,28 @@ class TestGradcheck:
             inputs,
             nondet_tol=nondet_tol,
         )
+
+
+@pytest.mark.cuda_if_available
+class TestErrors:
+    def test_rope_validation_errors(self, device):
+        inputs_from_freqs = attention_inputs(device=device, use_rope="from_freqs")
+        inputs_precomputed = attention_inputs(device=device, use_rope="precomputed")
+
+        inputs_all = inputs_from_freqs.copy()
+        inputs_all["key_rope_encoding"] = inputs_precomputed["key_rope_encoding"]
+
+        with pytest.raises(
+            (ValueError, torch.jit.Error),  # pyright: ignore[reportArgumentType]
+            match="Cannot provide both key_rope_encoding and"
+        ):
+            GatherAndSubsetAttentionFunction.apply(*ordered_autograd_inputs(inputs_all))
+
+        inputs_missing = inputs_from_freqs.copy()
+        inputs_missing["rope_freqs"] = None
+
+        with pytest.raises(
+            (ValueError, torch.jit.Error),  # pyright: ignore[reportArgumentType]
+            match="Cannot provide only one of key_positions and rope_freqs"
+        ):
+            GatherAndSubsetAttentionFunction.apply(*ordered_autograd_inputs(inputs_missing))
