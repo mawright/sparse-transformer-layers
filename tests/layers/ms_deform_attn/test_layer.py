@@ -179,7 +179,9 @@ def build_random_inputs(
 @pytest.mark.cpu_and_cuda
 @settings(deadline=None, suppress_health_check=[HealthCheck.differing_executors])
 @given(cfg=ms_deform_attn_strategy(require_grads=True))
-def test_forward_shapes_and_grads(cfg: dict[str, Any], device: str | torch.device):
+def test_forward_shapes_and_grads(
+    cfg: dict[str, Any], device: Union[str, torch.device]
+):
     """Test basic forward-backward usage."""
     (
         module,
@@ -222,7 +224,9 @@ def test_forward_shapes_and_grads(cfg: dict[str, Any], device: str | torch.devic
 @pytest.mark.cpu_and_cuda
 @settings(deadline=None, suppress_health_check=[HealthCheck.differing_executors])
 @given(cfg=ms_deform_attn_strategy())
-def test_query_permutation_invariance(cfg: dict[str, Any], device: str | torch.device):
+def test_query_permutation_invariance(
+    cfg: dict[str, Any], device: Union[str, torch.device]
+):
     """Tests permutation invariance of queries."""
     (
         module,
@@ -279,7 +283,7 @@ def test_query_permutation_invariance(cfg: dict[str, Any], device: str | torch.d
 
 
 @pytest.mark.cpu_and_cuda
-def test_zero_queries(device: str | torch.device):
+def test_zero_queries(device: Union[str, torch.device]):
     """Test with 0-length query tensor"""
     device = torch.device(device)
     embed_dim, n_heads, n_levels, n_points = 32, 4, 2, 4
@@ -305,7 +309,7 @@ def test_zero_queries(device: str | torch.device):
 
 
 @pytest.mark.cpu_and_cuda
-def test_single_point_simple_interp(device: str | torch.device):
+def test_single_point_simple_interp(device: Union[str, torch.device]):
     """
     See if we can recover a straightforward interpolation with a single level and
     with 0 offset.

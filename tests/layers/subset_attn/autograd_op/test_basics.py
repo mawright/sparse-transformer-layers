@@ -1,4 +1,4 @@
-from typing import Any, Literal
+from typing import Any, Literal, Union
 
 import pytest
 import torch
@@ -120,7 +120,7 @@ class TestBasicForwardBackward:
     def test_attention_with_different_rope_settings(
         self,
         device,
-        use_rope: Literal["none"] | Literal["precomputed"] | Literal["from_freqs"],
+        use_rope: Union[Literal["none"], Literal["precomputed"], Literal["from_freqs"]],
     ) -> None:
         """Test attention with different RoPE settings."""
         inputs = attention_inputs(use_rope=use_rope, device=device)
@@ -424,7 +424,7 @@ class TestGradcheck:
     def test_basic_gradcheck(
         self,
         device,
-        use_rope: Literal["none"] | Literal["precomputed"] | Literal["from_freqs"],
+        use_rope: Union[Literal["none"], Literal["precomputed"], Literal["from_freqs"]],
     ) -> None:
         """Test gradcheck with different RoPE settings."""
         inputs = attention_inputs(
