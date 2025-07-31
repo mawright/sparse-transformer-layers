@@ -36,6 +36,8 @@ class SparseMSDeformableAttentionBlock(nn.Module):
         self.out_proj = nn.Linear(embed_dim, embed_dim, bias=bias)
         self.out_proj_drop = nn.Dropout(dropout)
 
+        self.reset_parameters()
+
     def forward(
         self,
         query: Tensor,

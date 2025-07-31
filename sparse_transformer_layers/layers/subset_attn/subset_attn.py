@@ -168,6 +168,33 @@ def batch_sparse_index_subset_attn(
 
 
 class BatchSparseIndexSubsetAttention(nn.Module):
+    """An nn.Module for performing sparse index subset attention.
+
+    This layer encapsulates the key and value projection weights (W_k, W_v)
+    and provides a convenient interface for the `batch_sparse_index_subset_attn`
+    function. It takes a sparse tensor and a query tensor, where for each query,
+    an index tensor specifies a subset of keys/values from the sparse tensor to
+    attend to.
+
+    This is particularly useful for models where attention should be constrained
+    to local neighborhoods in a sparse data structure, saving significant memory
+    and computation compared to dense attention.
+
+    Notes:
+        - This module does not include the query projection (W_q) or the final
+          output projection (W_o). The query tensor is expected to be projected
+          beforehand, and the output of this module should be passed through a
+          separate nn.Linear layer for the output projection.
+        - For more details on the arguments and behavior, see the documentation for
+          the `batch_sparse_index_subset_attn` function.
+
+    Args:
+        embed_dim (int): The embedding dimension for the queries, keys, and values.
+        use_bias (bool): Whether to include bias terms in the key and value
+            projections. Defaults to False.
+        dtype (Optional[torch.dtype]): The desired data type for the projection
+            weights. Defaults to None.
+    """
     def __init__(
         self,
         embed_dim: int,
@@ -194,6 +221,57 @@ class BatchSparseIndexSubsetAttention(nn.Module):
         background_embedding: Optional[Tensor] = None,
         check_all_specified: bool = False,
     ):
+        """Forward pass for BatchSparseIndexSubsetAttention.
+
+        Args:
+            sparse_tensor (Tensor): Sparse tensor of dimension [..., M]; where ... are
+                S leading sparse dimensions and M is the dense feature dimension.
+            index_tensor (Tensor): Long tensor of dimension [N, L, S]; where N is the
+                number of queries, L is the number of keys per query, and S is
+                the number of sparse dimensions. Negative indices and indices outside
+                the spatial dimension of the sparse tensor are not supported and will
+                be considered unspecified.
+            query_tensor (Tensor): Query features of shape [N, M]; where N matches
+                the number of queries from index_tensor, and M is the feature dimension.
+            n_heads (int): Number of attention heads to use.
+            query_mask (Optional[Tensor]): Optional boolean tensor of shape [N] that
+                indicates queries that should not participate in the subset attention
+                operation. Specifically, queries at positions where query_mask is True
+                will have their output masked out to 0.
+            key_rope_encoding (Optional[Tensor]): Optional positional encoding for keys
+                of shape [N, L, n_heads, head_dim]. Used for rotary position embedding
+                (RoPE). The n_heads dimension may also be 1, which will broadcast the
+                encoding across heads. If key_rope_encoding is specified, head_dim must
+                be divisible by 2. Cannot be used together with key_positions and
+                rope_freqs.
+            key_positions (Optional[Tensor]): Position information for each key of shape
+                [N, L, P], where N and L match the dimensions from index_tensor
+                and P is the dimensionality of the position representation. Used
+                together with rope_freqs to compute rotary position embedding (RoPE)
+                from frequencies. Cannot be used together with key_rope_encoding.
+            rope_freqs (Optional[Tensor]): Frequency values for rotary encodings of
+                shape [P, G, n_heads, head_dim] or [P, G, 1, head_dim], where P matches
+                the position dimension from key_positions, and G is the number of
+                frequency groups. Used together with key_positions to compute rotary
+                position embedding (RoPE) from frequencies. Cannot be used together with
+                key_rope_encoding.
+            scale_factor (Optional[float]): Optional scaling factor for attention scores.
+                If None, will default is 1/sqrt(head_dim).
+            background_embedding (Optional[Tensor]): Optional tensor that will be used
+                as a fill value for keys that are not specified in the sparse tensor.
+                Must be broadcastable to [N, L, M].
+            check_all_specified (bool): If True, this function will raise a ValueError
+                if any of the indices in `index_tensor` are not specified in
+                `sparse_tensor`. If False, unspecified indices will be masked out in
+                the attention calculation. Incompatible with background_embedding.
+                Defaults to False.
+
+        Returns:
+            - Tensor: Output tensor after attention of shape [N, M], where N is the number
+                of queries and M is the query embedding dimension.
+            - Tensor: Boolean mask of shape [N, L], indicating which keys were actually
+                specified in the sparse tensor.
+        """
         kv_params = self.kv_params()
 
         return batch_sparse_index_subset_attn(

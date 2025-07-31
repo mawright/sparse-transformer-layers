@@ -12,6 +12,33 @@ from pytorch_sparse_utils.batching.batch_utils import batch_offsets_to_indices
 ## Based on https://github.com/fundamentalvision/Deformable-DETR/blob/main/models/ops/modules/ms_deform_attn.py
 ## and https://github.com/open-mmlab/mmcv/blob/main/mmcv/ops/multi_scale_deform_attn.py
 class SparseMSDeformableAttention(nn.Module):
+    """An nn.Module for Multi-Scale Deformable Attention on sparse feature maps.
+
+    This module implements the attention mechanism described in "Deformable DETR".
+    Instead of attending to all features in a dense feature map, each query learns
+    to sample a small, fixed number of points (`n_points`) from multiple feature
+    levels (`n_levels`). The locations of these sampling points are predicted as
+    offsets from the query's reference position.
+
+    This implementation is adapted to work with `torch.sparse_coo_tensor`s
+    as the input feature maps. It uses a custom bilinear interpolation function
+    to efficiently sample values from the sparse feature maps at the predicted
+    locations.
+
+    The module contains learnable parameters for:
+    - A value projection (`value_proj`) applied to the input feature maps.
+    - A linear layer (`sampling_offsets`) to predict the 2D offsets for each
+        sampling point.
+    - A linear layer (`attention_weights`) to predict the weight of each sampled
+        point.
+    - A final output projection (`output_proj`).
+
+    Args:
+        embed_dim (int): The embedding dimension of the input and output features.
+        n_heads (int): The number of attention heads.
+        n_levels (int): The number of feature levels to sample from.
+        n_points (int): The number of sampling points per head per level.
+    """
     def __init__(
         self,
         embed_dim: int,
@@ -67,7 +94,7 @@ class SparseMSDeformableAttention(nn.Module):
         query_level_indices: Optional[Tensor] = None,
         background_embedding: Optional[Tensor] = None,
     ) -> Tensor:
-        """Forward function for SparseMSDeformableAttention
+        """Forward function for SparseMSDeformableAttention.
 
         Args:
             query (Tensor): Batch-flattened query tensor of shape [n_query x embed_dim]
