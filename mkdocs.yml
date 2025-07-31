@@ -1,0 +1,23 @@
+site_name: sparse-transformer-layers
+theme:
+  name: readthedocs
+repo_url: https://github.com/mawright/sparse-transformer-layers
+
+plugins:
+  - search
+  - mkdocstrings:
+      handlers:
+        python:
+          options:
+            show_source: false
+          paths: [sparse_transformer_layers]
+
+markdown_extensions:
+  - toc:
+      permalink: true
+
+nav:
+  - Home: index.md
+  - Self-Attention: self_attn.md
+  - Neighborhood Attention: neigh_attn.md
+  - MSDeform Attention: msdeform_attn.md

@@ -25,6 +25,8 @@ class SparseMSDeformableAttention(nn.Module):
     to efficiently sample values from the sparse feature maps at the predicted
     locations.
 
+    The current version of this module only supports spatially-2D data.
+
     The module contains learnable parameters for:
     - A value projection (`value_proj`) applied to the input feature maps.
     - A linear layer (`sampling_offsets`) to predict the 2D offsets for each

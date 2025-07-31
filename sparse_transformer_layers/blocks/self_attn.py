@@ -25,6 +25,11 @@ class MultilevelSelfAttentionBlockWithRoPE(nn.Module):
     This module applies self-attention across tokens from multiple resolution levels,
     using Rotary Position Encodings (RoPE) to encode the spatial positions of tokens.
 
+    This module is meant as a plug-and-play standard Multi-head Attention Transformer
+    block, encapsulating the input projection, RoPE encoding, attention operation,
+    output operation with optional dropout, and layer normalization in either pre-norm
+    or post-norm configurations.
+
     Args:
         embed_dim (int): Dimensionality of input and output embeddings.
         n_heads (int): Number of attention heads.

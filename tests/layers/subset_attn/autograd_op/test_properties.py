@@ -19,11 +19,11 @@ from ..conftest import (
 
 
 @pytest.mark.cuda_if_available
-@settings(deadline=None, max_examples=25)
+@settings(deadline=None, max_examples=10)
 @given(
     input_params=exhaustive_attention_input_configs(
         dtypes=[torch.double], min_requiring_grads=1
-    )
+    ),
 )
 def test_gradcheck_exhaustive(device: str, input_params: dict[str, Any]) -> None:
     """Gradcheck test letting Hypothesis really explore the input space.

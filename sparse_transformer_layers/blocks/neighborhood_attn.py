@@ -303,6 +303,7 @@ class SparseNeighborhoodAttentionBlock(nn.Module):
         return x
 
     def reset_parameters(self):
+        """Initializes/resets the weights of all submodules."""
         self.norm.reset_parameters()
         self.q_in_proj.reset_parameters()
         self.subset_attn.reset_parameters()
@@ -333,21 +334,20 @@ def get_multilevel_neighborhoods(
             Default: [3, 5, 7, 9].
 
     Returns:
-        Tuple[Tensor, Tensor, Tensor]: A tuple containing:
-            - multilevel_neighborhood_indices: Tensor of shape
-                [n_queries, sum(neighborhood_sizes^position_dim), position_dim]
-                containing the spatial indices of all neighborhood points for each
-                query across all levels.
-            - out_of_bounds_mask: Boolean tensor of shape
-                [n_queries, sum(neighborhood_sizes^position_dim)] that is True at locations
-                in multilevel_neighborhood_indices that are out of bounds; i.e.
-                negative or >= the spatial shape for that level
-                If some of the computed neighborhood indices for a query are out of
-                bounds of the level's spatial shape, those indices will instead be
-                filled with mask values of -1.
-            - level_indices: Tensor of shape [sum(neighborhood_sizes^position_dim)]
-                mapping each neighborhood position to its corresponding resolution
-                level.
+        multilevel_neighborhood_indices (Tensor): Tensor of shape
+            [n_queries, sum(neighborhood_sizes^position_dim), position_dim]
+            containing the spatial indices of all neighborhood points for each
+            query across all levels.
+        out_of_bounds_mask (Tensor): Boolean tensor of shape
+            [n_queries, sum(neighborhood_sizes^position_dim)] that is True at locations
+            in multilevel_neighborhood_indices that are out of bounds; i.e.
+            negative or >= the spatial shape for that level
+            If some of the computed neighborhood indices for a query are out of
+            bounds of the level's spatial shape, those indices will instead be
+            filled with mask values of -1.
+        level_indices (Tensor): Tensor of shape [sum(neighborhood_sizes^position_dim)]
+            mapping each neighborhood position to its corresponding resolution
+            level.
 
     Raises:
         ValueError: If input tensors don't have the expected shape or dimensions, or
