@@ -14,8 +14,11 @@ dependencies = [
     "nd_rotary_encodings @ git+https://github.com/mawright/nd-rotary-encodings.git",
 ]
 
-[tool.setuptools]
-packages = ["sparse_transformer_layers"]
+[tool.setuptools.packages.find]
+include = [
+    "sparse_transformer_layers",
+    "sparse_transformer_layers.*",
+]
 
 [project.optional-dependencies]
 tests = [
