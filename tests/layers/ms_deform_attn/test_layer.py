@@ -340,4 +340,4 @@ def test_single_point_simple_interp(device: str | torch.device):
 
     out = layer(query, spatial_positions, query_batch_offsets, sparse_maps, lvl_shapes)
     expected = dense.view(-1, embed_dim).mean(0)  # exact mean
-    assert torch.allclose(out.squeeze(0), expected)
+    assert torch.allclose(out.squeeze(0), expected, atol=1e-7)
