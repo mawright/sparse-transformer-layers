@@ -44,3 +44,17 @@ filterwarnings = [
     "ignore:.*Importing from timm\\.models\\.layers.*:FutureWarning:timm.models.layers", 
     "ignore:.*locale.getdefaultlocale.*:DeprecationWarning",
 ]
+
+[tool.coverage.run]
+source = ["sparse_transformer_layers"]
+parallel = true
+
+[tool.coverage.report]
+exclude_also = [
+    "def __repr__",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+    "if TYPE_CHECKING:",
+    "if torch\\.jit\\.is_scripting\\(\\):",
+]
